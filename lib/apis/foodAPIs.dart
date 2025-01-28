@@ -5,52 +5,50 @@ import 'package:canteen_food_ordering_app/screens/adminHome.dart';
 import 'package:canteen_food_ordering_app/screens/login.dart';
 import 'package:canteen_food_ordering_app/screens/navigationBar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:progress_dialog/progress_dialog.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
-ProgressDialog pr;
+late ProgressDialog pr;
 
-void toast(String data){
+void toast(String data) {
   Fluttertoast.showToast(
-    msg: data,
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: ToastGravity.BOTTOM,
-    backgroundColor: Colors.grey,
-    textColor: Colors.white
-  );
+      msg: data,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.grey,
+      textColor: Colors.white);
 }
 
 login(User user, AuthNotifier authNotifier, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
-  AuthResult authResult;
+  firebase.UserCredential authResult;
   try {
-    authResult = await FirebaseAuth.instance
-      .signInWithEmailAndPassword(email: user.email, password: user.password);
+    authResult = await firebase.FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: user.email, password: user.password);
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
     });
-    toast(error.message.toString());
+    toast(error.toString());
     print(error);
     return;
   }
 
   try {
     if (authResult != null) {
-      FirebaseUser firebaseUser = authResult.user;
-      if (!firebaseUser.isEmailVerified) {
-        await FirebaseAuth.instance.signOut();
+      firebase.User firebaseUser = authResult.user!;
+      if (!firebaseUser.emailVerified) {
+        await firebase.FirebaseAuth.instance.signOut();
         pr.hide().then((isHidden) {
           print(isHidden);
         });
         toast("Email ID not verified");
         return;
-      }
-      else if (firebaseUser != null) {
+      } else if (firebaseUser != null) {
         print("Log In: $firebaseUser");
         authNotifier.setUser(firebaseUser);
         await getUserDetails(authNotifier);
@@ -58,14 +56,14 @@ login(User user, AuthNotifier authNotifier, BuildContext context) async {
         pr.hide().then((isHidden) {
           print(isHidden);
         });
-        if(authNotifier.userDetails.role == 'admin'){
+        if (authNotifier.userDetails.role == 'admin') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (BuildContext context) {
               return AdminHomePage();
             }),
           );
-        }else{
+        } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (BuildContext context) {
@@ -79,46 +77,46 @@ login(User user, AuthNotifier authNotifier, BuildContext context) async {
     pr.hide().then((isHidden) {
       print(isHidden);
     });
-    toast(error.message.toString());
+    toast(error.toString());
     print(error);
     return;
   }
-  
 }
 
 signUp(User user, AuthNotifier authNotifier, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   bool userDataUploaded = false;
-  AuthResult authResult;
-  try{
-    authResult = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: user.email.trim(), password: user.password
-    );
-  } catch(error){
+  firebase.UserCredential authResult;
+  try {
+    authResult = await firebase.FirebaseAuth.instance
+        .createUserWithEmailAndPassword(
+            email: user.email.trim(), password: user.password);
+  } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
     });
-    toast(error.message.toString());
+    toast(error.toString());
     print(error);
     return;
   }
 
   try {
     if (authResult != null) {
-      UserUpdateInfo updateInfo = UserUpdateInfo();
-      updateInfo.displayName = user.displayName;
+      // UserUpdateInfo updateInfo = UserUpdateInfo();
+      // updateInfo.displayName = user.displayName;
 
-      FirebaseUser firebaseUser = authResult.user;
+      firebase.User firebaseUser = authResult.user!;
       await firebaseUser.sendEmailVerification();
 
       if (firebaseUser != null) {
-        await firebaseUser.updateProfile(updateInfo);
+        await firebaseUser.updateProfile(displayName: user.displayName);
         await firebaseUser.reload();
         print("Sign Up: $firebaseUser");
         uploadUserData(user, userDataUploaded);
-        await FirebaseAuth.instance.signOut();
-        authNotifier.setUser(null);
+        await firebase.FirebaseAuth.instance.signOut();
+        authNotifier.setUser(firebaseUser);
         pr.hide().then((isHidden) {
           print(isHidden);
         });
@@ -133,43 +131,42 @@ signUp(User user, AuthNotifier authNotifier, BuildContext context) async {
     pr.hide().then((isHidden) {
       print(isHidden);
     });
-    toast(error.message.toString());
+    toast(error.toString());
     print(error);
     return;
   }
-  
 }
 
 getUserDetails(AuthNotifier authNotifier) async {
-  await Firestore.instance
+  await FirebaseFirestore.instance
       .collection('users')
-      .document(authNotifier.user.uid)
+      .doc(authNotifier.user.uid)
       .get()
       .catchError((e) => print(e))
       .then((value) => {
-        (value != null) ? 
-          authNotifier.setUserDetails(User.fromMap(value.data)):
-          print(value)                    
-      });
+            (value != null)
+                ? authNotifier.setUserDetails(User.fromMap(value.data()!))
+                : print(value)
+          });
 }
 
 uploadUserData(User user, bool userdataUpload) async {
   bool userDataUploadVar = userdataUpload;
-  FirebaseUser currentUser = await FirebaseAuth.instance.currentUser();
+  firebase.User currentUser = await firebase.FirebaseAuth.instance.currentUser!;
 
-  CollectionReference userRef = Firestore.instance.collection('users');
-  CollectionReference cartRef = Firestore.instance.collection('carts');
-  
+  CollectionReference userRef = FirebaseFirestore.instance.collection('users');
+  CollectionReference cartRef = FirebaseFirestore.instance.collection('carts');
+
   user.uuid = currentUser.uid;
   if (userDataUploadVar != true) {
     await userRef
-        .document(currentUser.uid)
-        .setData(user.toMap())
+        .doc(currentUser.uid)
+        .set(user.toMap())
         .catchError((e) => print(e))
         .then((value) => userDataUploadVar = true);
     await cartRef
-        .document(currentUser.uid)
-        .setData({})
+        .doc(currentUser.uid)
+        .set({})
         .catchError((e) => print(e))
         .then((value) => userDataUploadVar = true);
   } else {
@@ -179,7 +176,8 @@ uploadUserData(User user, bool userdataUpload) async {
 }
 
 initializeCurrentUser(AuthNotifier authNotifier, BuildContext context) async {
-  FirebaseUser firebaseUser = await FirebaseAuth.instance.currentUser();
+  firebase.User? firebaseUser =
+      await firebase.FirebaseAuth.instance.currentUser;
   if (firebaseUser != null) {
     authNotifier.setUser(firebaseUser);
     await getUserDetails(authNotifier);
@@ -187,9 +185,9 @@ initializeCurrentUser(AuthNotifier authNotifier, BuildContext context) async {
 }
 
 signOut(AuthNotifier authNotifier, BuildContext context) async {
-  await FirebaseAuth.instance.signOut();
+  await firebase.FirebaseAuth.instance.signOut();
 
-  authNotifier.setUser(null);
+  // authNotifier.setUser(null);
   print('log out');
   Navigator.pushReplacement(
     context,
@@ -199,16 +197,19 @@ signOut(AuthNotifier authNotifier, BuildContext context) async {
   );
 }
 
-forgotPassword(User user, AuthNotifier authNotifier, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+forgotPassword(
+    User user, AuthNotifier authNotifier, BuildContext context) async {
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email);
+    await firebase.FirebaseAuth.instance
+        .sendPasswordResetEmail(email: user.email);
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
     });
-    toast(error.message.toString());
+    toast(error.toString());
     print(error);
     return;
   }
@@ -220,13 +221,17 @@ forgotPassword(User user, AuthNotifier authNotifier, BuildContext context) async
 }
 
 addToCart(Food food, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    FirebaseUser currentUser = await FirebaseAuth.instance.currentUser();
-    CollectionReference cartRef = Firestore.instance.collection('carts');
-    QuerySnapshot data = await cartRef.document(currentUser.uid).collection('items').getDocuments();
-    if(data.documents.length >= 10) {
+    firebase.User currentUser =
+        await firebase.FirebaseAuth.instance.currentUser!;
+    CollectionReference cartRef =
+        FirebaseFirestore.instance.collection('carts');
+    QuerySnapshot data =
+        await cartRef.doc(currentUser.uid).collection('items').get();
+    if (data.docs.length >= 10) {
       pr.hide().then((isHidden) {
         print(isHidden);
       });
@@ -234,9 +239,12 @@ addToCart(Food food, BuildContext context) async {
       return;
     }
     await cartRef
-      .document(currentUser.uid).collection('items').document(food.id).setData({"count": 1})
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(currentUser.uid)
+        .collection('items')
+        .doc(food.id)
+        .set({"count": 1})
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -252,15 +260,21 @@ addToCart(Food food, BuildContext context) async {
 }
 
 removeFromCart(Food food, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    FirebaseUser currentUser = await FirebaseAuth.instance.currentUser();
-    CollectionReference cartRef = Firestore.instance.collection('carts');
+    firebase.User currentUser =
+        await firebase.FirebaseAuth.instance.currentUser!;
+    CollectionReference cartRef =
+        FirebaseFirestore.instance.collection('carts');
     await cartRef
-      .document(currentUser.uid).collection('items').document(food.id).delete()
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(currentUser.uid)
+        .collection('items')
+        .doc(food.id)
+        .delete()
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -275,15 +289,19 @@ removeFromCart(Food food, BuildContext context) async {
   toast("Removed from cart successfully!");
 }
 
-addNewItem(String itemName, int price, int totalQty, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+addNewItem(
+    String? itemName, int? price, int? totalQty, BuildContext context) async {
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    CollectionReference itemRef = Firestore.instance.collection('items');
+    CollectionReference itemRef =
+        FirebaseFirestore.instance.collection('items');
     await itemRef
-      .document().setData({"item_name": itemName, "price": price, "total_qty": totalQty})
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc()
+        .set({"item_name": itemName, "price": price, "total_qty": totalQty})
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -299,15 +317,19 @@ addNewItem(String itemName, int price, int totalQty, BuildContext context) async
   toast("New Item added successfully!");
 }
 
-editItem(String itemName, int price, int totalQty, BuildContext context, String id) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+editItem(String itemName, int price, int totalQty, BuildContext context,
+    String id) async {
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    CollectionReference itemRef = Firestore.instance.collection('items');
+    CollectionReference itemRef =
+        FirebaseFirestore.instance.collection('items');
     await itemRef
-      .document(id).setData({"item_name": itemName, "price": price, "total_qty": totalQty})
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(id)
+        .set({"item_name": itemName, "price": price, "total_qty": totalQty})
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -324,14 +346,17 @@ editItem(String itemName, int price, int totalQty, BuildContext context, String 
 }
 
 deleteItem(String id, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    CollectionReference itemRef = Firestore.instance.collection('items');
+    CollectionReference itemRef =
+        FirebaseFirestore.instance.collection('items');
     await itemRef
-      .document(id).delete()
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(id)
+        .delete()
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -348,21 +373,30 @@ deleteItem(String id, BuildContext context) async {
 }
 
 editCartItem(String itemId, int count, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    FirebaseUser currentUser = await FirebaseAuth.instance.currentUser();
-    CollectionReference cartRef = Firestore.instance.collection('carts');
-    if(count <= 0){
+    firebase.User currentUser =
+        await firebase.FirebaseAuth.instance.currentUser!;
+    CollectionReference cartRef =
+        FirebaseFirestore.instance.collection('carts');
+    if (count <= 0) {
       await cartRef
-      .document(currentUser.uid).collection('items').document(itemId).delete()
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
-    }else{
+          .doc(currentUser.uid)
+          .collection('items')
+          .doc(itemId)
+          .delete()
+          .catchError((e) => print(e))
+          .then((value) => print("Success"));
+    } else {
       await cartRef
-        .document(currentUser.uid).collection('items').document(itemId).updateData({"count": count})
-        .catchError((e) => print(e))
-        .then((value) => print("Success"));
+          .doc(currentUser.uid)
+          .collection('items')
+          .doc(itemId)
+          .update({"count": count})
+          .catchError((e) => print(e))
+          .then((value) => print("Success"));
     }
   } catch (error) {
     pr.hide().then((isHidden) {
@@ -379,14 +413,17 @@ editCartItem(String itemId, int count, BuildContext context) async {
 }
 
 addMoney(int amount, BuildContext context, String id) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    CollectionReference userRef = Firestore.instance.collection('users');
+    CollectionReference userRef =
+        FirebaseFirestore.instance.collection('users');
     await userRef
-      .document(id).updateData({'balance': FieldValue.increment(amount)})
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(id)
+        .update({'balance': FieldValue.increment(amount)})
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -409,23 +446,31 @@ addMoney(int amount, BuildContext context, String id) async {
 }
 
 placeOrder(BuildContext context, double total) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
     // Initiaization
-    FirebaseUser currentUser = await FirebaseAuth.instance.currentUser();
-    CollectionReference cartRef = Firestore.instance.collection('carts');
-    CollectionReference orderRef = Firestore.instance.collection('orders');
-    CollectionReference itemRef = Firestore.instance.collection('items');
-    CollectionReference userRef = Firestore.instance.collection('users');
+    firebase.User currentUser =
+        await firebase.FirebaseAuth.instance.currentUser!;
+    CollectionReference cartRef =
+        FirebaseFirestore.instance.collection('carts');
+    CollectionReference orderRef =
+        FirebaseFirestore.instance.collection('orders');
+    CollectionReference itemRef =
+        FirebaseFirestore.instance.collection('items');
+    CollectionReference userRef =
+        FirebaseFirestore.instance.collection('users');
 
-    List<String> foodIds = new List<String>();
+    List<String> foodIds = [];
     Map<String, int> count = new Map<String, int>();
-    List<dynamic> _cartItems = new List<dynamic>();
+    List<dynamic> _cartItems = [];
 
     // Checking user balance
-    DocumentSnapshot userData = await userRef.document(currentUser.uid).get();
-    if(userData.data['balance'] < total){
+    DocumentSnapshot userData = await userRef.doc(currentUser.uid).get();
+
+    var uData = userData.data() as Map<String, dynamic>;
+    if (uData['balance'] < total) {
       pr.hide().then((isHidden) {
         print(isHidden);
       });
@@ -434,65 +479,77 @@ placeOrder(BuildContext context, double total) async {
     }
 
     // Getting all cart items of the user
-    QuerySnapshot data = await cartRef.document(currentUser.uid).collection('items').getDocuments();
-    data.documents.forEach((item) {
-      foodIds.add(item.documentID);
-      count[item.documentID] = item.data['count'];
+    QuerySnapshot data =
+        await cartRef.doc(currentUser.uid).collection('items').get();
+    data.docs.forEach((item) {
+      foodIds.add(item.id);
+      var itemData = item.data() as Map<String, dynamic>;
+      count[item.id] = itemData['count'];
     });
 
     // Checking for item availability
-    QuerySnapshot snap = await itemRef.where(FieldPath.documentId, whereIn: foodIds).getDocuments();
-    for (var i = 0; i < snap.documents.length; i++) {
-      if(snap.documents[i].data['total_qty'] < count[snap.documents[i].documentID]){
+    QuerySnapshot snap =
+        await itemRef.where(FieldPath.documentId, whereIn: foodIds).get();
+    for (var i = 0; i < snap.docs.length; i++) {
+      var snapData = snap.docs[i].data() as Map<String, dynamic>;
+      if (snapData['total_qty'] < count[snap.docs[i].id]) {
         pr.hide().then((isHidden) {
           print(isHidden);
         });
         print("not");
-        toast("Item: ${snap.documents[i].data['item_name']} has QTY: ${snap.documents[i].data['total_qty']} only. Reduce/Remove the item.");
+        var snapData = snap.docs[i].data() as Map<String, dynamic>;
+
+        toast(
+            "Item: $snapData['item_name']} has QTY: $snapData['total_qty']} only. Reduce/Remove the item.");
         return;
       }
     }
 
     // Creating cart items array
-    snap.documents.forEach((item) {
+    snap.docs.forEach((item) {
+      var itemData = item.data() as Map<String, dynamic>;
+
       _cartItems.add({
-        "item_id": item.documentID,
-        "count": count[item.documentID],
-        "item_name": item.data['item_name'],
-        "price": item.data['price']
+        "item_id": item.id,
+        "count": count[item.id],
+        "item_name": itemData['item_name'],
+        "price": itemData['price']
       });
     });
-    
+
     // Creating a transaction
-    await Firestore.instance.runTransaction((Transaction transaction) async {
+    await FirebaseFirestore.instance
+        .runTransaction((Transaction transaction) async {
+      // Update the item count in items table
+      for (var i = 0; i < snap.docs.length; i++) {
+        var snapData = snap.docs[i].data() as Map<String, dynamic>;
 
-        // Update the item count in items table
-        for (var i = 0; i < snap.documents.length; i++) {
-          await transaction.update(snap.documents[i].reference, {"total_qty": snap.documents[i].data["total_qty"] - count[snap.documents[i].documentID]});
-        }
+        await transaction.update(snap.docs[i].reference,
+            {"total_qty": snapData["total_qty"] - count[snap.docs[i].id]});
+      }
 
-        // Deduct amount from user
-        await userRef.document(currentUser.uid).updateData({'balance': FieldValue.increment(-1*total)});
+      // Deduct amount from user
+      await userRef
+          .doc(currentUser.uid)
+          .update({'balance': FieldValue.increment(-1 * total)});
 
-        // Place a new order
-        await orderRef
-          .document()
-          .setData({
-            "items": _cartItems, 
-            "is_delivered": false, 
-            "total": total, 
-            "placed_at": DateTime.now(), 
-            "placed_by": currentUser.uid
-          });
-        
-        // Empty cart
-        for (var i = 0; i < data.documents.length; i++) {
-          await transaction.delete(data.documents[i].reference);
-        }
-        print("in in");
-        // return;
+      // Place a new order
+      await orderRef.doc().set({
+        "items": _cartItems,
+        "is_delivered": false,
+        "total": total,
+        "placed_at": DateTime.now(),
+        "placed_by": currentUser.uid
+      });
+
+      // Empty cart
+      for (var i = 0; i < data.docs.length; i++) {
+        await transaction.delete(data.docs[i].reference);
+      }
+      print("in in");
+      // return;
     });
-    
+
     // Successfull transaction
     pr.hide().then((isHidden) {
       print(isHidden);
@@ -517,14 +574,17 @@ placeOrder(BuildContext context, double total) async {
 }
 
 orderReceived(String id, BuildContext context) async {
-  pr = new ProgressDialog(context, type: ProgressDialogType.Normal, isDismissible: false, showLogs: false);
+  pr = new ProgressDialog(context,
+      type: ProgressDialogType.normal, isDismissible: false, showLogs: false);
   pr.show();
   try {
-    CollectionReference ordersRef = Firestore.instance.collection('orders');
+    CollectionReference ordersRef =
+        FirebaseFirestore.instance.collection('orders');
     await ordersRef
-      .document(id).updateData({'is_delivered': true})
-      .catchError((e) => print(e))
-      .then((value) => print("Success"));
+        .doc(id)
+        .update({'is_delivered': true})
+        .catchError((e) => print(e))
+        .then((value) => print("Success"));
   } catch (error) {
     pr.hide().then((isHidden) {
       print(isHidden);

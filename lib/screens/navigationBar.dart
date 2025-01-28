@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 // ignore: must_be_immutable
 class NavigationBarPage extends StatefulWidget {
   int selectedIndex;
-  NavigationBarPage({@required this.selectedIndex});
+  NavigationBarPage({required this.selectedIndex});
   @override
   _NavigationBarPageState createState() => _NavigationBarPageState();
 }

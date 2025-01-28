@@ -1,6 +1,5 @@
 import 'package:canteen_food_ordering_app/apis/foodAPIs.dart';
 import 'package:canteen_food_ordering_app/notifiers/authNotifier.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:canteen_food_ordering_app/models/user.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -13,34 +12,36 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final GlobalKey<FormState> _formkey = GlobalKey<FormState>();
-  
+
   User _user = new User();
 
   @override
   void initState() {
-    AuthNotifier authNotifier = Provider.of<AuthNotifier>(context, listen: false);
+    AuthNotifier authNotifier =
+        Provider.of<AuthNotifier>(context, listen: false);
     initializeCurrentUser(authNotifier, context);
     super.initState();
   }
 
-  void toast(String data){
+  void toast(String data) {
     Fluttertoast.showToast(
-      msg: data,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.grey,
-      textColor: Colors.white
-    );
+        msg: data,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.grey,
+        textColor: Colors.white);
   }
 
   void _submitForm() {
-    if (!_formkey.currentState.validate()) {
+    if (!_formkey.currentState!.validate()) {
       return;
     }
-    _formkey.currentState.save();
-    AuthNotifier authNotifier = Provider.of<AuthNotifier>(context, listen: false);
-    RegExp regExp = new RegExp(r'^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$');
-    if(!regExp.hasMatch(_user.email)){
+    _formkey.currentState!.save();
+    AuthNotifier authNotifier =
+        Provider.of<AuthNotifier>(context, listen: false);
+    RegExp regExp = new RegExp(
+        r'^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$');
+    if (!regExp.hasMatch(_user.email)) {
       toast("Enter a valid Email ID");
     } else {
       print("Success");
@@ -64,11 +65,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           child: TextFormField(
             keyboardType: TextInputType.emailAddress,
-            validator: (String value) {
+            validator: (String? value) {
               return null;
             },
-            onSaved: (String value) {
-              _user.email = value;
+            onSaved: (String? value) {
+              _user.email = value!;
             },
             cursorColor: Color.fromRGBO(255, 63, 111, 1),
             decoration: InputDecoration(
@@ -134,7 +135,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         child: Form(
           key: _formkey,
-          autovalidate: true,
+          autovalidateMode: AutovalidateMode.always,
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

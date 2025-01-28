@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:canteen_food_ordering_app/screens/landingPage.dart';
 import 'package:provider/provider.dart';
@@ -7,20 +8,20 @@ import 'notifiers/authNotifier.dart';
 //   runApp(MyApp());
 // }
 
-void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthNotifier(),
-        ),
-        // ChangeNotifierProvider(
-        //   create: (_) => FoodNotifier(),
-        // ),
-      ],
-      child: MyApp(),
-    )
-  );
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(
+        create: (_) => AuthNotifier(),
+      ),
+      // ChangeNotifierProvider(
+      //   create: (_) => FoodNotifier(),
+      // ),
+    ],
+    child: MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {

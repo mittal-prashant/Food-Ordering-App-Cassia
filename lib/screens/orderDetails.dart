@@ -1,10 +1,8 @@
 import 'package:canteen_food_ordering_app/apis/foodAPIs.dart';
 import 'package:canteen_food_ordering_app/notifiers/authNotifier.dart';
 import 'package:canteen_food_ordering_app/widgets/customRaisedButton.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class OrderDetailsPage extends StatefulWidget {
 

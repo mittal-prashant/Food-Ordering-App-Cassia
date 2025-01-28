@@ -1,11 +1,11 @@
 class User {
-  String displayName;
-  String email;
-  String password;
-  String uuid;
-  String role;
-  double balance;
-  String phone;
+  late String displayName;
+  late String email;
+  late String password;
+  late String uuid;
+  late String role;
+  late double balance;
+  late String phone;
 
   User();
 
